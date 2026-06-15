@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>获取经纬度示例 (GitHub Pages)</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f6f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+        h1 { font-size: 1.5rem; margin-bottom: 1.5rem; color: #2c3e50; }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+            width: 100%;
+        }
+        button:hover { background-color: #2980b9; }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        
+        .result-box {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: #ecf0f1;
+            border-radius: 8px;
+            text-align: left;
+            display: none; /* 默认隐藏 */
+        }
+        .result-box.show { display: block; }
+        .result-item { margin: 8px 0; font-size: 0.95rem; }
+        .label { font-weight: bold; color: #7f8c8d; }
+        .value { color: #2c3e50; word-break: break-all; }
+        
+        .error-box {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: #fee;
+            color: #c0392b;
+            border-radius: 8px;
+            border: 1px solid #fcc;
+            display: none;
+        }
+        .error-box.show { display: block; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📍 获取当前经纬度</h1>
+    <p style="color: #7f8c8d; font-size: 0.9rem; margin-bottom: 1.5rem;">
+        点击按钮获取设备当前位置。<br>
+        <small>(手机端 GPS 精度最高，电脑端通常为 Wi-Fi/IP 估算)</small>
+    </p>
+    
+    <button id="getLocationBtn">获取我的位置</button>
+
+    <!-- 结果显示区 -->
+    <div id="resultBox" class="result-box">
+        <div class="result-item"><span class="label">纬度 (Latitude):</span> <span class="value" id="lat">-</span></div>
+        <div class="result-item"><span class="label">经度 (Longitude):</span> <span class="value" id="lng">-</span></div>
+        <div class="result-item"><span class="label">精度 (Accuracy):</span> <span class="value" id="acc">-</span></div>
+        <div class="result-item"><span class="label">坐标系:</span> <span class="value">WGS-84 (GPS标准)</span></div>
+    </div>
+
+    <!-- 错误提示区 -->
+    <div id="errorBox" class="error-box"></div>
+</div>
+
+<script>
+    const btn = document.getElementById('getLocationBtn');
+    const resultBox = document.getElementById('resultBox');
+    const errorBox = document.getElementById('errorBox');
+
+    btn.addEventListener('click', () => {
+        // 重置显示状态
+        resultBox.classList.remove('show');
+        errorBox.classList.remove('show');
+        btn.disabled = true;
+        btn.textContent = '定位中...';
+
+        // 1. 检查浏览器是否支持
+        if (!("geolocation" in navigator)) {
+            showError("您的浏览器不支持地理定位功能。");
+            return;
+        }
+
+        // 2. 调用 Geolocation API
+        navigator.geolocation.getCurrentPosition(
+            // 成功回调
+            (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const acc = position.coords.accuracy; // 精度（米）
+
+                document.getElementById('lat').textContent = lat.toFixed(6);
+                document.getElementById('lng').textContent = lng.toFixed(6);
+                document.getElementById('acc').textContent = `约 ${Math.round(acc)} 米`;
+
+                resultBox.classList.add('show');
+                btn.disabled = false;
+                btn.textContent = '重新获取位置';
+            },
+            // 失败回调
+            (error) => {
+                let errorMsg = "未知错误";
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMsg = "用户拒绝了位置请求。请在浏览器设置中允许该网站获取位置。";
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMsg = "位置信息不可用（可能是设备没有GPS或信号太差）。";
+                        break;
+                    case error.TIMEOUT:
+                        errorMsg = "获取位置请求超时，请重试。";
+                        break;
+                }
+                showError(errorMsg);
+                btn.disabled = false;
+                btn.textContent = '获取我的位置';
+            },
+            // 配置选项
+            {
+                enableHighAccuracy: true, // 请求高精度（会尝试使用GPS）
+                timeout: 10000,           // 10秒超时
+                maximumAge: 0             // 不使用缓存，强制获取最新位置
+            }
+        );
+    });
+
+    function showError(msg) {
+        errorBox.textContent = "❌ " + msg;
+        errorBox.classList.add('show');
+    }
+</script>
+
+</body>
+</html>
